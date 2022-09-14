@@ -1,0 +1,9 @@
+{
+  "manifest_version": 3,
+  "name": "dictee",
+  "version": "1.0.0",
+  "content_scripts": [{
+    "js": ["src/main.tsx"],
+    "matches": ["https://www.google.com/*"]
+  }]
+}
