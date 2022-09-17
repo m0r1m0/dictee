@@ -1,3 +1,4 @@
+import { Textarea } from "@chakra-ui/react";
 import { useState } from "react";
 import "./App.css";
 import { useInterval } from "./useInterval";
@@ -15,14 +16,7 @@ function App() {
 
   return (
     <div className="AppContainer">
-      <input
-        type="text"
-        placeholder="答えを入力してね！"
-        style={{
-          height: 100,
-          width: 600,
-        }}
-      />
+      <Textarea fontSize="24" variant="filled" height="100%" placeholder="答えを入力してね！" resize={"none"} isRequired />
     </div>
   );
 }

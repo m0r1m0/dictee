@@ -1,13 +1,12 @@
 .AppContainer {
-  height: 300px;
+  height: 200px;
   position: absolute;
   bottom: 0;
   width: 100%;
-
   display: flex;
   justify-content: center;
   align-items: center;
-  
   font-size: 24px;
   color: black;
+  padding: 24px;
 }
