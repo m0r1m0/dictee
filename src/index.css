@@ -11,3 +11,7 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+.watch-video--player-view {
+  height: calc(100% - 300px) !important;
+}
