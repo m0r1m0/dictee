@@ -5,5 +5,9 @@
   "content_scripts": [{
     "js": ["src/main.tsx"],
     "matches": ["https://www.netflix.com/*"]
+  }],
+  "web_accessible_resources": [{
+    "resources": ["hijack.js"],
+    "matches": ["https://www.netflix.com/*"]
   }]
 }
