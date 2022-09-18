@@ -39,8 +39,9 @@ function App() {
   const [answer, setAnswer] = useState("");
   const [urlsCache, setUrlsCache] = useState<SubsDownloadUrlsCache>({});
   const [currentSubtitles, setCurrentSubtitles] = useState<subTitleType[]>([]);
-  const [currentSubtitle, setCurrentSubtitle] = useState("");
+  const [currentSubtitle, setCurrentSubtitle] = useState<subTitleType[]>([]);
 
+  // 字幕をダウンロードするためのURLを保存
   useEffect(() => {
     const listener = (e: CustomEvent<MovieInfo>) => {
       console.log('DICTEE_DOWNLOADURL_RECEIVED', {
@@ -76,6 +77,7 @@ function App() {
     return () => window.removeEventListener("DICTEE_DOWNLOADURL_RECEIVED", listener as EventListener);
   }, [])
 
+  // 回答入力欄を表示するか判定
   useInterval(() => {
     const hasElm = document.getElementsByClassName("watch-video").length > 0 && document.querySelector('video') != null
     if (hasElm != showElement) {
@@ -83,6 +85,7 @@ function App() {
     }
   }, 500);
 
+  // 現在再生中の動画の字幕を取得
   useEffect(() => {
     if (showElement) {
       const cache = urlsCache[getMovieId(location.pathname)];
@@ -96,14 +99,7 @@ function App() {
     }
   }, [showElement, urlsCache])
 
-  const handleTextChange = useCallback(
-    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      setAnswer(e.target.value);
-    },
-    []
-  );
-
-
+  // 今表示する字幕を抽出
   useEffect(() => {
     if (!showElement) {
       return;
@@ -116,15 +112,34 @@ function App() {
 
     const handleTimeUpdate = () => {
       const currentTime = Math.round(videoElement.currentTime * 1000);
-      const currentSubs = getCurrentSubtitlesText(currentTime, currentSubtitles);
-      setCurrentSubtitle(currentSubs);
+
+      if (currentSubtitle.length === 0) {
+        setCurrentSubtitle(currentSubtitles.filter(s => s.start <= currentTime && s.end >= currentTime))
+        return;
+      }
+      
+      // 今表示している字幕のendを超えたらpause & 次の字幕を検索
+      const { end } = currentSubtitle[0]
+      if (currentTime >= end) {
+        if (!videoElement.paused) {
+          window.dispatchEvent(new CustomEvent("DICTEE_PLAYER_PAUSE"));
+        }
+        setCurrentSubtitle(currentSubtitles.filter(s => s.start <= currentTime && s.end >= currentTime))
+      }
     }
 
     videoElement.addEventListener("timeupdate", handleTimeUpdate);
     return () => {
       videoElement.removeEventListener('timeupdate', handleTimeUpdate)
     }
-  }, [currentSubtitles, showElement])
+  }, [currentSubtitles, showElement, currentSubtitle])
+
+  const handleTextChange = useCallback(
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      setAnswer(e.target.value);
+    },
+    []
+  );
 
   if (!showElement) {
     return null;
@@ -132,7 +147,7 @@ function App() {
 
   return (
     <Box className="AppContainer" p={6}>
-      <Text fontSize='2xl'>{currentSubtitle}</Text>
+      <Text fontSize='2xl'>{getCurrentSubtitlesText(currentSubtitle)}</Text>
       <Textarea
         value={answer}
         onChange={handleTextChange}
