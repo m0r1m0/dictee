@@ -4,9 +4,6 @@
   bottom: 0;
   width: 100%;
   display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 24px;
+  flex-direction: column;
   color: black;
-  padding: 24px;
 }
