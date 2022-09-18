@@ -1,9 +1,9 @@
-import { Textarea, Text, Box, Button } from "@chakra-ui/react";
+import { Textarea, Text, Box, Button, useToast } from "@chakra-ui/react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import "./App.css";
 import { useInterval } from "./useInterval";
 import { parse, subTitleType } from "subtitle"
-import { getCurrentSubtitlesText } from "./utils/getCurrentSubtitlesText";
+import { getSubtitlesText } from "./utils/getCurrentSubtitlesText";
 
 type MovieInfo = {
   movieId: string;
@@ -40,6 +40,15 @@ function App() {
   const [urlsCache, setUrlsCache] = useState<SubsDownloadUrlsCache>({});
   const [currentSubtitles, setCurrentSubtitles] = useState<subTitleType[]>([]);
   const [currentSubtitle, setCurrentSubtitle] = useState<subTitleType[]>([]);
+  const [prevSubtitle, setPrevSubtitle] = useState<subTitleType[]>([]);
+  const correctToast = useToast({
+    title: "正解",
+    status: "success",
+  });
+  const incorrectToast = useToast({
+    title: "不正解",
+    status: "error",
+  })
 
   // 字幕をダウンロードするためのURLを保存
   useEffect(() => {
@@ -112,7 +121,6 @@ function App() {
 
     const handleTimeUpdate = () => {
       const currentTime = Math.round(videoElement.currentTime * 1000);
-
       if (currentSubtitle.length === 0) {
         setCurrentSubtitle(currentSubtitles.filter(s => s.start <= currentTime && s.end >= currentTime))
         return;
@@ -125,6 +133,7 @@ function App() {
           window.dispatchEvent(new CustomEvent("DICTEE_PLAYER_PAUSE"));
         }
         setCurrentSubtitle(currentSubtitles.filter(s => s.start <= currentTime && s.end >= currentTime))
+        setPrevSubtitle(currentSubtitle);
       }
     }
 
@@ -141,13 +150,43 @@ function App() {
     []
   );
 
+  // 答え合わせ
+  const handleJudgeClick = useCallback(() => {
+    const videoElement = document.querySelector("video");
+    if (videoElement == null) {
+      return;
+    }
+
+    // 答えを取得
+    let correctAnswer = ""
+    const currentTime = Math.round(videoElement.currentTime * 1000);
+    if (currentSubtitle.length === 0) {
+      correctAnswer = getSubtitlesText(prevSubtitle);
+    } else if (currentSubtitle[0].end > currentTime) {
+      correctAnswer = getSubtitlesText(prevSubtitle);
+    } else {
+      correctAnswer = getSubtitlesText(currentSubtitle);
+    }
+
+    if (answer === correctAnswer) {
+      correctToast();
+    } else {
+      incorrectToast();
+    }
+  }, [currentSubtitle, correctToast, incorrectToast, prevSubtitle, answer])
+
+  useEffect(() => {
+    console.log('prev', getSubtitlesText(prevSubtitle));
+    console.log('current', getSubtitlesText(currentSubtitle))
+  }, [currentSubtitle, prevSubtitle])
+
   if (!showElement) {
     return null;
   }
 
   return (
     <Box className="AppContainer" p={6}>
-      <Text fontSize='2xl'>{getCurrentSubtitlesText(currentSubtitle)}</Text>
+      <Text fontSize='2xl'>{getSubtitlesText(currentSubtitle)}</Text>
       <Textarea
         value={answer}
         onChange={handleTextChange}
@@ -159,6 +198,9 @@ function App() {
         isRequired
         mt={4}
       />
+      <Box display={"flex"}>
+        <Button colorScheme="teal" ml="auto" mt={4} size="lg" onClick={handleJudgeClick}>答え合わせ</Button>
+      </Box>
     </Box>
   );
 }
