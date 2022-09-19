@@ -8,6 +8,7 @@ import {
   FormControl,
   FormLabel,
   Switch,
+  IconButton,
 } from "@chakra-ui/react";
 import React, {
   createRef,
@@ -22,6 +23,8 @@ import "./App.css";
 import { useInterval } from "./useInterval";
 import { parse, subTitleType } from "subtitle";
 import { getSubtitlesText } from "./utils/getCurrentSubtitlesText";
+import { RepeatIcon } from "@chakra-ui/icons";
+import { findPrevSubtitles } from "./utils/findPrevSubtitles";
 
 type MovieInfo = {
   movieId: string;
@@ -69,6 +72,30 @@ function App() {
   });
   const [easyModeAnswer, setEasyModeAnswer] = useState<string[][]>([]);
   const [isEasyMode, setIsEasyMode] = useState(false);
+  const [prevAutoPausedTime, setPrevAutoPausedTime] = useState<number | undefined>(undefined);
+
+  const questionSubtitle = useMemo(() => {
+    const videoElement = document.querySelector("video");
+    if (videoElement == null) {
+      return [];
+    }
+    const currentTime = Math.round(videoElement.currentTime * 1000)
+    // 一度も自動停止したことがない
+    if (prevAutoPausedTime == null) {
+      const searchKeyTime = currentSubtitle[0] != null ? currentSubtitle[0].start : currentTime;
+      const prevSubtitles = findPrevSubtitles(Number(searchKeyTime), currentSubtitles)
+      if (prevSubtitles.length > 0) {
+        return prevSubtitle
+      }
+      return currentSubtitle;
+    }
+
+    // 前回の自動停止は今の字幕のstart, end内か
+    if (currentSubtitle[0] != null && prevAutoPausedTime >= currentSubtitle[0].start && prevAutoPausedTime <= currentSubtitle[0].end) {
+      return currentSubtitle;
+    }
+    return prevSubtitle;
+  }, [currentSubtitle, prevSubtitle, prevAutoPausedTime]);
 
   // 字幕をダウンロードするためのURLを保存
   useEffect(() => {
@@ -165,9 +192,11 @@ function App() {
 
       // 今表示している字幕のendを超えたらpause & 次の字幕を検索
       const { end } = currentSubtitle[0];
-      if (currentTime >= end) {
+      if (currentTime > end) {
         if (!videoElement.paused) {
+          window.dispatchEvent(new CustomEvent("DICTEE_PLAYER_SEEK", { detail: end }));
           window.dispatchEvent(new CustomEvent("DICTEE_PLAYER_PAUSE"));
+          setPrevAutoPausedTime(end as number);
         }
         setCurrentSubtitle(
           currentSubtitles.filter(
@@ -191,23 +220,6 @@ function App() {
     []
   );
 
-  const questionSubtitle = useMemo(() => {
-    // 現在の字幕がなければ1つ前の字幕が問題
-    if (currentSubtitle.length === 0) {
-      return prevSubtitle;
-    }
-
-    // 現在の字幕はあるが、終了時間をすぎていない場合は1つ前の字幕が問題
-    const videoElement = document.querySelector("video");
-    if (
-      videoElement != null &&
-      currentSubtitle[0].end > Math.round(videoElement.currentTime * 1000)
-    ) {
-      return prevSubtitle;
-    }
-
-    return currentSubtitle;
-  }, [currentSubtitle, prevSubtitle]);
 
   // 答え合わせ
   const handleJudgeClick = useCallback(() => {
@@ -225,11 +237,6 @@ function App() {
       incorrectToast();
     }
   }, [correctToast, incorrectToast, answer, questionSubtitle]);
-
-  useEffect(() => {
-    console.log("prev", getSubtitlesText(prevSubtitle));
-    console.log("current", getSubtitlesText(currentSubtitle));
-  }, [currentSubtitle, prevSubtitle]);
 
   const easyModeInputRefs = useRef(
     easyModeAnswer.map((word) => {
@@ -293,13 +300,28 @@ function App() {
       }
     };
 
+  const handleRepeatClick = () => {
+    // 問題になってる字幕の開始時間を取得
+    const { start } = questionSubtitle[0]
+    // startの時間までseekする
+    window.dispatchEvent(new CustomEvent("DICTEE_PLAYER_SEEK", { detail: start }))
+  }
+
   if (!showElement) {
     return null;
   }
 
   return (
     <Box className="AppContainer" p={6}>
+      <Text>{getSubtitlesText(questionSubtitle)}</Text>
       <Box display="flex">
+        <IconButton
+          colorScheme="teal"
+          aria-label="もう一回聞く"
+          size="lg"
+          icon={<RepeatIcon />}
+          onClick={handleRepeatClick}
+        />
         <FormControl display="flex" alignItems="center">
           <FormLabel htmlFor="easy-mode" mb={0} ml="auto" fontSize={12}>
             簡単モードに切り替える

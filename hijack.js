@@ -36,3 +36,8 @@ addEventListener("DICTEE_PLAYER_PAUSE", () => {
   const player = getPlayer()
   player.pause();
 })
+
+addEventListener("DICTEE_PLAYER_SEEK", (e) => {
+  const player = getPlayer();
+  player.seek(e.detail);
+})
