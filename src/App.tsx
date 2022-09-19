@@ -1,4 +1,14 @@
-import { Textarea, Text, Box, Button, useToast, Input } from "@chakra-ui/react";
+import {
+  Textarea,
+  Text,
+  Box,
+  Button,
+  useToast,
+  Input,
+  FormControl,
+  FormLabel,
+  Switch,
+} from "@chakra-ui/react";
 import React, {
   createRef,
   useCallback,
@@ -58,6 +68,7 @@ function App() {
     status: "error",
   });
   const [easyModeAnswer, setEasyModeAnswer] = useState<string[][]>([]);
+  const [isEasyMode, setIsEasyMode] = useState(false);
 
   // 字幕をダウンロードするためのURLを保存
   useEffect(() => {
@@ -188,12 +199,15 @@ function App() {
 
     // 現在の字幕はあるが、終了時間をすぎていない場合は1つ前の字幕が問題
     const videoElement = document.querySelector("video");
-    if (videoElement != null && currentSubtitle[0].end > Math.round(videoElement.currentTime * 1000)) {
+    if (
+      videoElement != null &&
+      currentSubtitle[0].end > Math.round(videoElement.currentTime * 1000)
+    ) {
       return prevSubtitle;
     }
 
-    return currentSubtitle
-  }, [currentSubtitle, prevSubtitle])
+    return currentSubtitle;
+  }, [currentSubtitle, prevSubtitle]);
 
   // 答え合わせ
   const handleJudgeClick = useCallback(() => {
@@ -203,7 +217,7 @@ function App() {
     }
 
     // 答えを取得
-    const correctAnswer = getSubtitlesText(questionSubtitle)
+    const correctAnswer = getSubtitlesText(questionSubtitle);
 
     if (answer === correctAnswer) {
       correctToast();
@@ -217,55 +231,67 @@ function App() {
     console.log("current", getSubtitlesText(currentSubtitle));
   }, [currentSubtitle, prevSubtitle]);
 
-  const easyModeInputRefs = useRef(easyModeAnswer.map(word => {
-    return word.map(_character => createRef<HTMLInputElement>())
-  }));
+  const easyModeInputRefs = useRef(
+    easyModeAnswer.map((word) => {
+      return word.map((_character) => createRef<HTMLInputElement>());
+    })
+  );
   // 簡単モードの入力stateの初期化
   useEffect(() => {
-    const newEasyModeAnswer = getSubtitlesText(questionSubtitle).split(" ").map(word => {
-      return word.split("").map((character) => "")
-    });
+    const newEasyModeAnswer = getSubtitlesText(questionSubtitle)
+      .split(" ")
+      .map((word) => {
+        return word.split("").map((character) => "");
+      });
     setEasyModeAnswer(newEasyModeAnswer);
-    easyModeInputRefs.current = newEasyModeAnswer.map(word => {
-      return word.map((_character) => createRef<HTMLInputElement>())
+    easyModeInputRefs.current = newEasyModeAnswer.map((word) => {
+      return word.map((_character) => createRef<HTMLInputElement>());
     });
-  }, [questionSubtitle])
+  }, [questionSubtitle]);
 
-  const handleChangeInput = (wordIndex: number, characterIndex: number) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    // state更新
-    const value = e.target.value.charAt(e.target.value.length - 1);
-    setEasyModeAnswer(s => s.map((w, wi) => {
-      if (wi === wordIndex) {
-        return w.map((c, ci) => {
-          if (ci === characterIndex) {
-            return value;
+  const handleChangeInput =
+    (wordIndex: number, characterIndex: number) =>
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      // state更新
+      const value = e.target.value.charAt(e.target.value.length - 1);
+      setEasyModeAnswer((s) =>
+        s.map((w, wi) => {
+          if (wi === wordIndex) {
+            return w.map((c, ci) => {
+              if (ci === characterIndex) {
+                return value;
+              }
+              return c;
+            });
           }
-          return c;
+          return w;
         })
-      }
-      return w;
-    }))
+      );
 
-    const correctAnswer = getSubtitlesText(questionSubtitle).split(" ").map(w => w.split(""));
-    // 不正解のときは次の入力欄にフォーカスしない
-    if (value !== correctAnswer[wordIndex][characterIndex]) {
-      return;
-    }
-
-    // 正解してたら次の入力欄にフォーカス
-    // 最後の1文字の場合は次の単語の最初の入力欄にフォーカス
-    if (characterIndex === (easyModeAnswer[wordIndex].length - 1)) {
-      // 最後の単語の時はなにもしない
-      if (wordIndex === (easyModeAnswer.length - 1)) {
+      const correctAnswer = getSubtitlesText(questionSubtitle)
+        .split(" ")
+        .map((w) => w.split(""));
+      // 不正解のときは次の入力欄にフォーカスしない
+      if (value !== correctAnswer[wordIndex][characterIndex]) {
         return;
       }
-      const nextInputRef = easyModeInputRefs.current[wordIndex + 1][0].current;
-      nextInputRef?.focus();
-    } else {
-      const nextInputRef = easyModeInputRefs.current[wordIndex][characterIndex + 1].current;
-      nextInputRef?.focus();
-    }
-  };
+
+      // 正解してたら次の入力欄にフォーカス
+      // 最後の1文字の場合は次の単語の最初の入力欄にフォーカス
+      if (characterIndex === easyModeAnswer[wordIndex].length - 1) {
+        // 最後の単語の時はなにもしない
+        if (wordIndex === easyModeAnswer.length - 1) {
+          return;
+        }
+        const nextInputRef =
+          easyModeInputRefs.current[wordIndex + 1][0].current;
+        nextInputRef?.focus();
+      } else {
+        const nextInputRef =
+          easyModeInputRefs.current[wordIndex][characterIndex + 1].current;
+        nextInputRef?.focus();
+      }
+    };
 
   if (!showElement) {
     return null;
@@ -273,56 +299,75 @@ function App() {
 
   return (
     <Box className="AppContainer" p={6}>
-      <Box height={"40%"} mt={4} display="flex" width="100%" flexWrap="wrap">
-        {easyModeAnswer
-          .map((word, wordIndex) => {
+      <Box display="flex">
+        <FormControl display="flex" alignItems="center">
+          <FormLabel htmlFor="easy-mode" mb={0} ml="auto" fontSize={12}>
+            簡単モードに切り替える
+          </FormLabel>
+          <Switch
+            id="easy-mode"
+            size={"lg"}
+            colorScheme="teal"
+            isChecked={isEasyMode}
+            onChange={() => {
+              setIsEasyMode((m) => !m);
+            }}
+          />
+        </FormControl>
+      </Box>
+      {isEasyMode && (
+        <Box height={"40%"} mt={4} display="flex" width="100%" flexWrap="wrap">
+          {easyModeAnswer.map((word, wordIndex) => {
             return (
               <Box className="word" mr={8} key={wordIndex} display="flex">
-                {
-                  word.map((character, characterIndex) => {
-                    return (
-                      <Input
-                        key={`${wordIndex}-${characterIndex}`}
-                        size="lg"
-                        w={16}
-                        h={16}
-                        mr={2}
-                        fontSize={16}
-                        textAlign="center"
-                        onChange={handleChangeInput(wordIndex, characterIndex)}
-                        value={character}
-                        ref={easyModeInputRefs.current[wordIndex][characterIndex]}
-                      />
-                    )
-                  })
-                }
+                {word.map((character, characterIndex) => {
+                  return (
+                    <Input
+                      key={`${wordIndex}-${characterIndex}`}
+                      size="lg"
+                      w={16}
+                      h={16}
+                      mr={2}
+                      fontSize={16}
+                      textAlign="center"
+                      onChange={handleChangeInput(wordIndex, characterIndex)}
+                      value={character}
+                      ref={easyModeInputRefs.current[wordIndex][characterIndex]}
+                    />
+                  );
+                })}
               </Box>
             );
           })}
-      </Box>
-      <Box height={"40%"} mt={4}>
-        <Textarea
-          value={answer}
-          onChange={handleTextChange}
-          fontSize="24"
-          variant="filled"
-          height="100%"
-          placeholder="答えを入力してね！"
-          resize={"none"}
-          isRequired
-        />
-      </Box>
-      <Box display={"flex"}>
-        <Button
-          colorScheme="teal"
-          ml="auto"
-          mt={4}
-          size="lg"
-          onClick={handleJudgeClick}
-        >
-          答え合わせ
-        </Button>
-      </Box>
+        </Box>
+      )}
+      {!isEasyMode && (
+        <>
+          <Box height={"40%"} mt={4}>
+            <Textarea
+              value={answer}
+              onChange={handleTextChange}
+              fontSize="24"
+              variant="filled"
+              height="100%"
+              placeholder="答えを入力してね！"
+              resize={"none"}
+              isRequired
+            />
+          </Box>
+          <Box display={"flex"}>
+            <Button
+              colorScheme="teal"
+              ml="auto"
+              mt={4}
+              size="lg"
+              onClick={handleJudgeClick}
+            >
+              答え合わせ
+            </Button>
+          </Box>
+        </>
+      )}
     </Box>
   );
 }
