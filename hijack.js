@@ -41,3 +41,8 @@ addEventListener("DICTEE_PLAYER_SEEK", (e) => {
   const player = getPlayer();
   player.seek(e.detail);
 })
+
+addEventListener("DICTEE_PLAYER_PLAY", () => {
+  const player = getPlayer();
+  player.play();
+})

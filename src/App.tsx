@@ -358,6 +358,9 @@ function App() {
     window.dispatchEvent(
       new CustomEvent("DICTEE_PLAYER_SEEK", { detail: start })
     );
+    window.dispatchEvent(
+      new CustomEvent("DICTEE_PLAYER_PLAY")
+    );
   };
 
   if (!showElement) {
