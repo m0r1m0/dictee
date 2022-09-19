@@ -23,6 +23,7 @@ import { parse, subTitleType } from "subtitle";
 import { getSubtitlesText } from "./utils/getCurrentSubtitlesText";
 import { RepeatIcon } from "@chakra-ui/icons";
 import { findPrevSubtitles } from "./utils/findPrevSubtitles";
+import { useShortcut } from "./useShortcut";
 
 type MovieInfo = {
   movieId: string;
@@ -362,6 +363,10 @@ function App() {
       new CustomEvent("DICTEE_PLAYER_PLAY")
     );
   };
+
+  useShortcut({
+    enter: handleRepeatClick
+  })
 
   if (!showElement) {
     return null;
