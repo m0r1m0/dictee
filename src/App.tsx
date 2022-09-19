@@ -14,8 +14,6 @@ import React, {
   createRef,
   useCallback,
   useEffect,
-  useLayoutEffect,
-  useMemo,
   useRef,
   useState,
 } from "react";
@@ -72,30 +70,82 @@ function App() {
   });
   const [easyModeAnswer, setEasyModeAnswer] = useState<string[][]>([]);
   const [isEasyMode, setIsEasyMode] = useState(false);
-  const [prevAutoPausedTime, setPrevAutoPausedTime] = useState<number | undefined>(undefined);
+  const [prevAutoPausedTime, setPrevAutoPausedTime] = useState<
+    number | undefined
+  >(undefined);
+  const [question, setQuestion] = useState<
+    | {
+        start: number;
+        end: number;
+        text: string;
+        subtitles: subTitleType[];
+      }
+    | undefined
+  >();
 
-  const questionSubtitle = useMemo(() => {
+  // 問題字幕の更新
+  useEffect(() => {
     const videoElement = document.querySelector("video");
     if (videoElement == null) {
-      return [];
+      return;
     }
-    const currentTime = Math.round(videoElement.currentTime * 1000)
+    const currentTime = Math.round(videoElement.currentTime * 1000);
     // 一度も自動停止したことがない
     if (prevAutoPausedTime == null) {
-      const searchKeyTime = currentSubtitle[0] != null ? currentSubtitle[0].start : currentTime;
-      const prevSubtitles = findPrevSubtitles(Number(searchKeyTime), currentSubtitles)
+      const searchKeyTime =
+        currentSubtitle[0] != null ? currentSubtitle[0].start : currentTime;
+      const prevSubtitles = findPrevSubtitles(
+        Number(searchKeyTime),
+        currentSubtitles
+      );
       if (prevSubtitles.length > 0) {
-        return prevSubtitle
+        setQuestion({
+          start: Number(prevSubtitles[0].start),
+          end: Number(prevSubtitles[0].end),
+          text: getSubtitlesText(prevSubtitles),
+          subtitles: prevSubtitles
+        });
+        return;
       }
-      return currentSubtitle;
+      if (currentSubtitle.length === 0) {
+        setQuestion(undefined);
+        return;
+      }
+      setQuestion({
+        start: Number(currentSubtitle[0].start),
+        end: Number(currentSubtitle[0].end),
+        text: getSubtitlesText(currentSubtitle),
+        subtitles: currentSubtitle,
+      })
+      return;
     }
 
     // 前回の自動停止は今の字幕のstart, end内か
-    if (currentSubtitle[0] != null && prevAutoPausedTime >= currentSubtitle[0].start && prevAutoPausedTime <= currentSubtitle[0].end) {
-      return currentSubtitle;
+    if (
+      currentSubtitle[0] != null &&
+      prevAutoPausedTime >= currentSubtitle[0].start &&
+      prevAutoPausedTime <= currentSubtitle[0].end
+    ) {
+      setQuestion({
+        start: Number(currentSubtitle[0].start),
+        end: Number(currentSubtitle[0].end),
+        text: getSubtitlesText(currentSubtitle),
+        subtitles: currentSubtitle,
+      })
+      return;
     }
-    return prevSubtitle;
-  }, [currentSubtitle, prevSubtitle, prevAutoPausedTime]);
+    if (prevSubtitle.length === 0) {
+      setQuestion(undefined);
+      return
+    }
+    setQuestion({
+      start: Number(prevSubtitle[0].start),
+      end: Number(prevSubtitle[0].end),
+      text: getSubtitlesText(prevSubtitle),
+      subtitles: prevSubtitle
+    });
+    return;
+  }, [currentSubtitle, prevSubtitle, prevAutoPausedTime])
 
   // 字幕をダウンロードするためのURLを保存
   useEffect(() => {
@@ -194,7 +244,9 @@ function App() {
       const { end } = currentSubtitle[0];
       if (currentTime > end) {
         if (!videoElement.paused) {
-          window.dispatchEvent(new CustomEvent("DICTEE_PLAYER_SEEK", { detail: end }));
+          window.dispatchEvent(
+            new CustomEvent("DICTEE_PLAYER_SEEK", { detail: end })
+          );
           window.dispatchEvent(new CustomEvent("DICTEE_PLAYER_PAUSE"));
           setPrevAutoPausedTime(end as number);
         }
@@ -220,7 +272,6 @@ function App() {
     []
   );
 
-
   // 答え合わせ
   const handleJudgeClick = useCallback(() => {
     const videoElement = document.querySelector("video");
@@ -229,14 +280,14 @@ function App() {
     }
 
     // 答えを取得
-    const correctAnswer = getSubtitlesText(questionSubtitle);
+    const correctAnswer = question?.text;
 
     if (answer === correctAnswer) {
       correctToast();
     } else {
       incorrectToast();
     }
-  }, [correctToast, incorrectToast, answer, questionSubtitle]);
+  }, [correctToast, incorrectToast, answer, question?.text]);
 
   const easyModeInputRefs = useRef(
     easyModeAnswer.map((word) => {
@@ -245,7 +296,7 @@ function App() {
   );
   // 簡単モードの入力stateの初期化
   useEffect(() => {
-    const newEasyModeAnswer = getSubtitlesText(questionSubtitle)
+    const newEasyModeAnswer = (question?.text ?? "")
       .split(" ")
       .map((word) => {
         return word.split("").map((character) => "");
@@ -254,7 +305,7 @@ function App() {
     easyModeInputRefs.current = newEasyModeAnswer.map((word) => {
       return word.map((_character) => createRef<HTMLInputElement>());
     });
-  }, [questionSubtitle]);
+  }, [question?.text]);
 
   const handleChangeInput =
     (wordIndex: number, characterIndex: number) =>
@@ -275,7 +326,7 @@ function App() {
         })
       );
 
-      const correctAnswer = getSubtitlesText(questionSubtitle)
+      const correctAnswer = (question?.text ?? "")
         .split(" ")
         .map((w) => w.split(""));
       // 不正解のときは次の入力欄にフォーカスしない
@@ -302,10 +353,12 @@ function App() {
 
   const handleRepeatClick = () => {
     // 問題になってる字幕の開始時間を取得
-    const { start } = questionSubtitle[0]
+    const start = question?.start
     // startの時間までseekする
-    window.dispatchEvent(new CustomEvent("DICTEE_PLAYER_SEEK", { detail: start }))
-  }
+    window.dispatchEvent(
+      new CustomEvent("DICTEE_PLAYER_SEEK", { detail: start })
+    );
+  };
 
   if (!showElement) {
     return null;
@@ -313,7 +366,7 @@ function App() {
 
   return (
     <Box className="AppContainer" p={6}>
-      <Text>{getSubtitlesText(questionSubtitle)}</Text>
+      <Text>{question?.text ?? ""}</Text>
       <Box display="flex">
         <IconButton
           colorScheme="teal"
@@ -341,7 +394,13 @@ function App() {
         <Box height={"40%"} mt={4} display="flex" width="100%" flexWrap="wrap">
           {easyModeAnswer.map((word, wordIndex) => {
             return (
-              <Box className="word" mr={8} key={wordIndex} display="flex" mb={4}>
+              <Box
+                className="word"
+                mr={8}
+                key={wordIndex}
+                display="flex"
+                mb={4}
+              >
                 {word.map((character, characterIndex) => {
                   return (
                     <Input
