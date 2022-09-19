@@ -366,7 +366,6 @@ function App() {
 
   return (
     <Box className="AppContainer" p={6}>
-      <Text>{question?.text ?? ""}</Text>
       <Box display="flex">
         <IconButton
           colorScheme="teal"
