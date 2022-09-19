@@ -13,5 +13,5 @@ code {
 }
 
 .watch-video--player-view {
-  height: calc(100% - 200px) !important;
+  height: calc(100% - 400px) !important;
 }
