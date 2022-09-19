@@ -319,7 +319,7 @@ function App() {
         <Box height={"40%"} mt={4} display="flex" width="100%" flexWrap="wrap">
           {easyModeAnswer.map((word, wordIndex) => {
             return (
-              <Box className="word" mr={8} key={wordIndex} display="flex">
+              <Box className="word" mr={8} key={wordIndex} display="flex" mb={4}>
                 {word.map((character, characterIndex) => {
                   return (
                     <Input
