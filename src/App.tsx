@@ -329,9 +329,9 @@ function App() {
 
       const correctAnswer = (question?.text ?? "")
         .split(" ")
-        .map((w) => w.split(""));
+        .map((w) => w.split("").map(c => c.toLowerCase()));
       // 不正解のときは次の入力欄にフォーカスしない
-      if (value !== correctAnswer[wordIndex][characterIndex]) {
+      if (value.toLowerCase() !== correctAnswer[wordIndex][characterIndex]) {
         return;
       }
 
