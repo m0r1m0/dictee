@@ -24,6 +24,8 @@ import { getSubtitlesText } from "./utils/getCurrentSubtitlesText";
 import { RepeatIcon } from "@chakra-ui/icons";
 import { findPrevSubtitles } from "./utils/findPrevSubtitles";
 import { useShortcut } from "./useShortcut";
+import { getCurrentTime } from "./utils/getCurrentTime";
+import { getNextSubtitles } from "./utils/getNextSubtitles";
 
 type MovieInfo = {
   movieId: string;
@@ -352,7 +354,7 @@ function App() {
       }
     };
 
-  const handleRepeatClick = () => {
+  const handleRepeatClick = useCallback(() => {
     // 問題になってる字幕の開始時間を取得
     const start = question?.start
     // startの時間までseekする
@@ -362,10 +364,29 @@ function App() {
     window.dispatchEvent(
       new CustomEvent("DICTEE_PLAYER_PLAY")
     );
-  };
+  }, [question?.start]);
+
+  // 次の字幕を再生する
+  const playNextSubtitle = useCallback(() => {
+    const videoElement = document.querySelector("video");
+    if (videoElement == null) {
+      return;
+    }
+
+    const currentTime = getCurrentTime(videoElement);
+    const nextSubtitles = getNextSubtitles(currentTime, currentSubtitles);
+    if (nextSubtitles.length === 0) {
+      return;
+    }
+
+    const { start } = nextSubtitles[0]
+    window.dispatchEvent(new CustomEvent("DICTEE_PLAYER_SEEK", { detail: start }));
+    window.dispatchEvent(new CustomEvent("DICTEE_PLAYER_PLAY"));
+  }, [currentSubtitles])
 
   useShortcut({
-    enter: handleRepeatClick
+    enter: handleRepeatClick,
+    arrowRight: playNextSubtitle,
   })
 
   if (!showElement) {
