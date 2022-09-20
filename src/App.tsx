@@ -56,6 +56,8 @@ const getMovieId = (path: string) => {
   return segments[segments.length - 1];
 };
 
+const SymbolRegex = /[,\.\?]/
+
 function App() {
   const [showElement, setShowElement] = useState(false);
   const [answer, setAnswer] = useState("");
@@ -92,7 +94,7 @@ function App() {
     if (videoElement == null) {
       return;
     }
-    const currentTime = Math.round(videoElement.currentTime * 1000);
+    const currentTime = getCurrentTime(videoElement);
     // 一度も自動停止したことがない
     if (prevAutoPausedTime == null) {
       const searchKeyTime =
@@ -302,7 +304,12 @@ function App() {
     const newEasyModeAnswer = (question?.text ?? "")
       .split(" ")
       .map((word) => {
-        return word.split("").map((character) => "");
+        return word.split("").map((character) => {
+          if (SymbolRegex.test(character)) {
+            return character;
+          }
+          return ""
+        });
       });
     setEasyModeAnswer(newEasyModeAnswer);
     easyModeInputRefs.current = newEasyModeAnswer.map((word) => {
@@ -338,21 +345,38 @@ function App() {
       }
 
       // 正解してたら次の入力欄にフォーカス
+      focusNext(wordIndex, characterIndex, correctAnswer);
+    };
+
+  const focusNext = (wordIndex: number, characterIndex: number, correctAnswer: string[][]) => {
       // 最後の1文字の場合は次の単語の最初の入力欄にフォーカス
       if (characterIndex === easyModeAnswer[wordIndex].length - 1) {
-        // 最後の単語の時はなにもしない
+        // 次の単語がない = 最後のときは何もしない
         if (wordIndex === easyModeAnswer.length - 1) {
+          return;
+        }
+        
+        // フォーカス対象が記号だった場合さらに次の入力欄にフォーカスする
+        const focusTargetCharacter = correctAnswer[wordIndex + 1][0];
+        if (SymbolRegex.test(focusTargetCharacter)) {
+          focusNext(wordIndex + 1, 0, correctAnswer);
           return;
         }
         const nextInputRef =
           easyModeInputRefs.current[wordIndex + 1][0].current;
         nextInputRef?.focus();
-      } else {
-        const nextInputRef =
-          easyModeInputRefs.current[wordIndex][characterIndex + 1].current;
-        nextInputRef?.focus();
+        return;
       }
-    };
+
+      const focusTargetCharacter = correctAnswer[wordIndex][characterIndex + 1];
+      if (SymbolRegex.test(focusTargetCharacter)) {
+        focusNext(wordIndex, characterIndex + 1, correctAnswer);
+        return;
+      }
+      const nextInputRef =
+        easyModeInputRefs.current[wordIndex][characterIndex + 1].current;
+      nextInputRef?.focus();
+  }
 
   const handleRepeatClick = useCallback(() => {
     // 問題になってる字幕の開始時間を取得
@@ -442,6 +466,7 @@ function App() {
                       onChange={handleChangeInput(wordIndex, characterIndex)}
                       value={character}
                       ref={easyModeInputRefs.current[wordIndex][characterIndex]}
+                      readOnly={SymbolRegex.test(character)}
                     />
                   );
                 })}
