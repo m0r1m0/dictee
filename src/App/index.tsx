@@ -265,19 +265,6 @@ function App() {
     d: playNextSubtitle,
   });
 
-  const setAnswerInputRef = useCallback(
-    (wordIndex: number, characterIndex: number) =>
-      (r: HTMLInputElement | null) => {
-        if (r == null) {
-          return;
-        }
-        r.removeEventListener("keydown", ignoreKeyDownListener);
-        r.addEventListener("keydown", ignoreKeyDownListener);
-        answerInputRefs.current[wordIndex][characterIndex] = r;
-      },
-    []
-  );
-
   // ショートカットで利用しているキーが入力欄で押されたときは無視するためのイベントリスナー
   const ignoreKeyDownListener = useCallback((e: KeyboardEvent) => {
     if (e.key === "d") {
@@ -286,6 +273,30 @@ function App() {
     }
     return;
   }, []);
+
+  const ignoreBlurListener = useCallback((e: FocusEvent) => {
+    // Netflix側からblurされた場合は無視する
+    if ((e.relatedTarget as HTMLElement).classList.contains("ltr-omkt8s")) {
+      (e.target as HTMLInputElement).focus();
+      return;
+    }
+  }, []);
+
+  const setAnswerInputRef = useCallback(
+    (wordIndex: number, characterIndex: number) =>
+      (r: HTMLInputElement | null) => {
+        if (r == null) {
+          return;
+        }
+        r.removeEventListener("keydown", ignoreKeyDownListener);
+        r.addEventListener("keydown", ignoreKeyDownListener);
+
+        r.removeEventListener("blur", ignoreBlurListener);
+        r.addEventListener("blur", ignoreBlurListener);
+        answerInputRefs.current[wordIndex][characterIndex] = r;
+      },
+    []
+  );
 
   if (!isVideoLoaded) {
     return null;
