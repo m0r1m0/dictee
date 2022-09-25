@@ -2,15 +2,22 @@ import { Reducer } from "react";
 import { subTitleType } from "subtitle";
 import { convertTextToQuestionArray } from "../utils/convertTextToQuestionArray";
 import { getSubtitlesText } from "../utils/getCurrentSubtitlesText";
+import { removeNSI } from "../utils/nonSpeechInformation";
 import { isSymbol } from "../utils/symbol";
 
 type State = {
   isVideoLoaded: boolean;
   subtitleUrls: Record<number, Record<string, string>>;
   subtitles: subTitleType[];
-  question: subTitleType[];
+  question: Question | undefined;
   currentSubtitles: subTitleType[];
   answer: string[][];
+};
+type Question = {
+  start: number;
+  end: number;
+  text: string;
+  originalSubtitles: subTitleType[];
 };
 
 interface DownloadUrlReceived {
@@ -33,7 +40,7 @@ interface VideoUnloaded {
 interface VideoTimeUpdated {
   type: "videoTimeUpdated";
   time: number;
-  initializeRefCallback: (question: subTitleType[]) => void;
+  initializeRefCallback: (question: Question) => void;
 }
 
 interface VideoPaused {
@@ -63,7 +70,7 @@ export const initialState: State = {
    * 現在視聴中の動画の字幕
    */
   subtitles: [],
-  question: [],
+  question: undefined,
   currentSubtitles: [],
   answer: [],
 };
@@ -115,16 +122,30 @@ export const reducer: Reducer<State, Action> = (state, action) => {
         };
       }
 
-      action.initializeRefCallback(newCurrentSubtitle);
-      const hasQuestionDifference = getSubtitlesText(state.question) !== getSubtitlesText(newCurrentSubtitle)
+      const newQuestion = convertSubtitlesToQuestion(newCurrentSubtitle);
+      // 質問が空(=全体がNSI)の場合は問題にしない
+      if (newQuestion == null) {
+        if (state.question != null) {
+          return {
+            ...state,
+            currentSubtitles: [],
+            question: undefined,
+            answer: [],
+          };
+        }
+        return state;
+      }
+
+      action.initializeRefCallback(newQuestion);
+      const hasQuestionDifference = state.question?.text !== newQuestion.text;
       if (hasQuestionDifference) {
         console.log("[ANSWER]: ", getSubtitlesText(newCurrentSubtitle));
       }
       return {
         ...state,
         currentSubtitles: newCurrentSubtitle,
-        question: hasQuestionDifference ? newCurrentSubtitle : state.question,
-        answer: hasQuestionDifference ? createEmptyAnswer(newCurrentSubtitle) : state.answer,
+        question: hasQuestionDifference ? newQuestion : state.question,
+        answer: hasQuestionDifference ? createEmptyAnswer(newQuestion) : state.answer,
       };
     }
     case "videoPaused": {
@@ -159,11 +180,33 @@ export const reducer: Reducer<State, Action> = (state, action) => {
   return state;
 };
 
-const createEmptyAnswer = (question: subTitleType[]) => {
-  return convertTextToQuestionArray(getSubtitlesText(question), (t) => {
+const createEmptyAnswer = (question: Question) => {
+  return convertTextToQuestionArray(question.text, (t) => {
     if (isSymbol(t)) {
       return t;
     }
     return "";
   });
 };
+
+/**
+ * subTitleTypeの字幕情報を問題情報に変換する
+ * @returns 問題がない場合はundefined
+ */
+const convertSubtitlesToQuestion = (subtitles: subTitleType[]): Question | undefined => {
+  if (subtitles.length === 0) {
+    return undefined;
+  }
+
+  const questionText = removeNSI(getSubtitlesText(subtitles));
+  if (questionText.length === 0) {
+    return undefined;
+  }
+
+  return {
+    start: Number(subtitles[0].start),
+    end: Number(subtitles[0].end),
+    text: questionText,
+    originalSubtitles: subtitles,
+  };
+}
