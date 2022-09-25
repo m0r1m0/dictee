@@ -116,12 +116,15 @@ export const reducer: Reducer<State, Action> = (state, action) => {
       }
 
       action.initializeRefCallback(newCurrentSubtitle);
-      const hasQuestionDifference = getSubtitlesText(state.question) === getSubtitlesText(newCurrentSubtitle)
+      const hasQuestionDifference = getSubtitlesText(state.question) !== getSubtitlesText(newCurrentSubtitle)
+      if (hasQuestionDifference) {
+        console.log("[ANSWER]: ", getSubtitlesText(newCurrentSubtitle));
+      }
       return {
         ...state,
         currentSubtitles: newCurrentSubtitle,
-        question: hasQuestionDifference ? state.question : newCurrentSubtitle,
-        answer: hasQuestionDifference ? state.answer : createEmptyAnswer(newCurrentSubtitle),
+        question: hasQuestionDifference ? newCurrentSubtitle : state.question,
+        answer: hasQuestionDifference ? createEmptyAnswer(newCurrentSubtitle) : state.answer,
       };
     }
     case "videoPaused": {
