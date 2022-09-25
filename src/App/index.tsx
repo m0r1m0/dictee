@@ -16,6 +16,7 @@ import { convertTextToQuestionArray } from "../utils/convertTextToQuestionArray"
 import { getSubtitlesText } from "../utils/getCurrentSubtitlesText";
 import { getCurrentTime } from "../utils/getCurrentTime";
 import { getNextSubtitles } from "../utils/getNextSubtitles";
+import { isSymbol } from "../utils/symbol";
 import { initialState, reducer } from "./reducer";
 
 type MovieInfo = {
@@ -38,8 +39,6 @@ const getMovieId = (path: string) => {
   const segments = path.split("/");
   return segments[segments.length - 1];
 };
-
-const SymbolRegex = /[,\.\?]/;
 
 function App() {
   const [
@@ -208,7 +207,7 @@ function App() {
 
       // フォーカス対象が記号だった場合さらに次の入力欄にフォーカスする
       const focusTargetCharacter = correctAnswer[wordIndex + 1][0];
-      if (SymbolRegex.test(focusTargetCharacter)) {
+      if (isSymbol(focusTargetCharacter)) {
         focusNext(wordIndex + 1, 0, correctAnswer);
         return;
       }
@@ -218,7 +217,7 @@ function App() {
     }
 
     const focusTargetCharacter = correctAnswer[wordIndex][characterIndex + 1];
-    if (SymbolRegex.test(focusTargetCharacter)) {
+    if (isSymbol(focusTargetCharacter)) {
       focusNext(wordIndex, characterIndex + 1, correctAnswer);
       return;
     }
@@ -318,7 +317,7 @@ function App() {
                         textAlign="center"
                         value={answer[wordIndex][characterIndex]}
                         onChange={handleChangeInput(wordIndex, characterIndex)}
-                        readOnly={SymbolRegex.test(character)}
+                        readOnly={isSymbol(character)}
                         variant="filled"
                       />
                     );

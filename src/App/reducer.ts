@@ -2,6 +2,7 @@ import { Reducer } from "react";
 import { subTitleType } from "subtitle";
 import { convertTextToQuestionArray } from "../utils/convertTextToQuestionArray";
 import { getSubtitlesText } from "../utils/getCurrentSubtitlesText";
+import { isSymbol } from "../utils/symbol";
 
 type State = {
   isVideoLoaded: boolean;
@@ -156,6 +157,9 @@ export const reducer: Reducer<State, Action> = (state, action) => {
 
 const createEmptyAnswer = (question: subTitleType[]) => {
   return convertTextToQuestionArray(getSubtitlesText(question), (t) => {
+    if (isSymbol(t)) {
+      return t;
+    }
     return "";
   });
 };
