@@ -114,13 +114,14 @@ export const reducer: Reducer<State, Action> = (state, action) => {
           currentSubtitles: newCurrentSubtitle,
         };
       }
-      
+
       action.initializeRefCallback(newCurrentSubtitle);
+      const hasQuestionDifference = getSubtitlesText(state.question) === getSubtitlesText(newCurrentSubtitle)
       return {
         ...state,
         currentSubtitles: newCurrentSubtitle,
-        question: newCurrentSubtitle,
-        answer: createEmptyAnswer(newCurrentSubtitle),
+        question: hasQuestionDifference ? state.question : newCurrentSubtitle,
+        answer: hasQuestionDifference ? state.answer : createEmptyAnswer(newCurrentSubtitle),
       };
     }
     case "videoPaused": {
