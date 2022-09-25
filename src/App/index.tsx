@@ -271,6 +271,9 @@ function App() {
       e.stopPropagation();
       return;
     }
+    if (e.key === "Escape") {
+      (e.target as HTMLInputElement).blur();
+    }
     return;
   }, []);
 
