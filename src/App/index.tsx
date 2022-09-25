@@ -301,6 +301,12 @@ function App() {
     []
   );
 
+  useEffect(() => {
+    if (question != null && question.text.length > 0) {
+      focusNext(0, -1, convertTextToQuestionArray(question.text));
+    }
+  }, [question?.text])
+
   if (!isVideoLoaded) {
     return null;
   }
