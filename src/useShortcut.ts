@@ -9,9 +9,13 @@ type Option = {
    * 右矢印が押されたときのショートカット
    */
   arrowRight?: () => void;
+  /**
+   * dが押されたときのショートカット
+   */
+  d?: () => void;
 }
 
-export const useShortcut = ({ enter, arrowRight }: Option) => {
+export const useShortcut = ({ enter, arrowRight, d }: Option) => {
   useEffect(() => {
     const listener = (e: KeyboardEvent) => {
       switch (e.key) {
@@ -19,8 +23,8 @@ export const useShortcut = ({ enter, arrowRight }: Option) => {
           enter?.();
           break;
         }
-        case "ArrowRight": {
-          arrowRight?.();
+        case "d": {
+          d?.();
           break;
         }
         default:
