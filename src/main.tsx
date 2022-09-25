@@ -2,7 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App'
 import './index.css'
-import { ChakraProvider } from "@chakra-ui/react"
+import { ChakraProvider, extendTheme } from "@chakra-ui/react"
 
 const injectScript = (filePath: string, tag: string) => {
   const node = document.getElementsByTagName(tag)[0];
@@ -18,8 +18,20 @@ const root = document.createElement('div');
 root.id = 'dictee-root'
 document.body.append(root);
 
+const theme = extendTheme({
+  styles: {
+    global: {
+      body: {
+        backgroundColor: "#141414"
+      }
+    }
+  }
+})
+
 ReactDOM.createRoot(root).render(
   <React.StrictMode>
-    <ChakraProvider><App /></ChakraProvider>
+    <ChakraProvider theme={theme} >
+      <App />
+    </ChakraProvider>
   </React.StrictMode>
 );
