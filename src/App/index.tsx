@@ -157,7 +157,7 @@ function App() {
         time: currentTime,
         initializeRefCallback: (newQuestion) => {
           answerInputRefs.current = convertTextToQuestionArray(
-            getSubtitlesText(newQuestion)
+            newQuestion.text
           ).map((word) => {
             return word.map((_character) => {
               return null;
@@ -184,7 +184,7 @@ function App() {
         value,
       });
       const correctAnswer = convertTextToQuestionArray(
-        getSubtitlesText(question),
+        question?.text ?? "",
         (v) => v.toLowerCase()
       );
       if (value.toLowerCase() !== correctAnswer[wordIndex][characterIndex]) {
@@ -226,11 +226,11 @@ function App() {
   };
 
   const handleRepeatClick = () => {
-    if (question.length === 0) {
+    if (question == null) {
       return;
     }
     // 問題になってる字幕の開始時間を取得
-    const start = question[0].start;
+    const start = question.start;
     // startの時間までseekする
     window.dispatchEvent(
       new CustomEvent("DICTEE_PLAYER_SEEK", { detail: start })
@@ -276,7 +276,7 @@ function App() {
 
   const ignoreBlurListener = useCallback((e: FocusEvent) => {
     // Netflix側からblurされた場合は無視する
-    if ((e.relatedTarget as HTMLElement).classList.contains("ltr-omkt8s")) {
+    if ((e.relatedTarget as HTMLElement)?.classList.contains("ltr-omkt8s")) {
       (e.target as HTMLInputElement).focus();
       return;
     }
@@ -305,7 +305,7 @@ function App() {
     <Box className="AppContainer" p={6} bg="white">
       <Box display="flex" width="100%" flexDirection="row">
         <Box display="flex" flexWrap="wrap" width="90%" alignItems="flex-start">
-          {convertTextToQuestionArray(getSubtitlesText(question)).map(
+          {convertTextToQuestionArray(question?.text ?? "").map(
             (word, wordIndex) => {
               return (
                 <Box
