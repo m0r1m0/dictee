@@ -114,9 +114,7 @@ export const reducer: Reducer<State, Action> = (state, action) => {
         };
       }
       
-      console.log('will be initialize ref callback', newCurrentSubtitle)
       action.initializeRefCallback(newCurrentSubtitle);
-
       return {
         ...state,
         currentSubtitles: newCurrentSubtitle,

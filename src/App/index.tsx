@@ -53,7 +53,7 @@ function App() {
     },
     dispatch,
   ] = useReducer(reducer, initialState);
-  const answerInputRefs = useRef<RefObject<HTMLInputElement>[][]>([]);
+  const answerInputRefs = useRef<(HTMLInputElement | null)[][]>([]);
 
   useInterval(() => {
     const hasElement =
@@ -157,12 +157,11 @@ function App() {
         type: "videoTimeUpdated",
         time: currentTime,
         initializeRefCallback: (newQuestion) => {
-          console.log("[CALLBACK] ref initialized", newQuestion);
           answerInputRefs.current = convertTextToQuestionArray(
             getSubtitlesText(newQuestion)
           ).map((word) => {
             return word.map((_character) => {
-              return createRef<HTMLInputElement>();
+              return null;
             });
           });
         },
@@ -190,7 +189,6 @@ function App() {
         (v) => v.toLowerCase()
       );
       if (value.toLowerCase() !== correctAnswer[wordIndex][characterIndex]) {
-        console.log("不正解！");
         return;
       }
       focusNext(wordIndex, characterIndex, correctAnswer);
@@ -214,7 +212,7 @@ function App() {
         focusNext(wordIndex + 1, 0, correctAnswer);
         return;
       }
-      const nextInputRef = answerInputRefs.current[wordIndex + 1][0].current;
+      const nextInputRef = answerInputRefs.current[wordIndex + 1][0];
       nextInputRef?.focus();
       return;
     }
@@ -224,8 +222,7 @@ function App() {
       focusNext(wordIndex, characterIndex + 1, correctAnswer);
       return;
     }
-    const nextInputRef =
-      answerInputRefs.current[wordIndex][characterIndex + 1].current;
+    const nextInputRef = answerInputRefs.current[wordIndex][characterIndex + 1];
     nextInputRef?.focus();
   };
 
@@ -257,19 +254,39 @@ function App() {
       return;
     }
 
-    const { start } = nextSubtitles[0]
-    window.dispatchEvent(new CustomEvent("DICTEE_PLAYER_SEEK", { detail: start }));
+    const { start } = nextSubtitles[0];
+    window.dispatchEvent(
+      new CustomEvent("DICTEE_PLAYER_SEEK", { detail: start })
+    );
     window.dispatchEvent(new CustomEvent("DICTEE_PLAYER_PLAY"));
-  }, [subtitles, isVideoLoaded])
+  }, [subtitles, isVideoLoaded]);
 
   useShortcut({
     enter: handleRepeatClick,
     d: playNextSubtitle,
-  })
-
-  useEffect(() => {
-    console.warn("[RENDERD]", answer, question);
   });
+
+  const setAnswerInputRef = useCallback(
+    (wordIndex: number, characterIndex: number) =>
+      (r: HTMLInputElement | null) => {
+        if (r == null) {
+          return;
+        }
+        r.removeEventListener("keydown", ignoreKeyDownListener);
+        r.addEventListener("keydown", ignoreKeyDownListener);
+        answerInputRefs.current[wordIndex][characterIndex] = r;
+      },
+    []
+  );
+
+  // ショートカットで利用しているキーが入力欄で押されたときは無視するためのイベントリスナー
+  const ignoreKeyDownListener = useCallback((e: KeyboardEvent) => {
+    if (e.key === "d") {
+      e.stopPropagation();
+      return;
+    }
+    return;
+  }, []);
 
   if (!isVideoLoaded) {
     return null;
@@ -291,7 +308,7 @@ function App() {
                   {word.map((character, characterIndex) => {
                     return (
                       <Input
-                        ref={answerInputRefs.current[wordIndex][characterIndex]}
+                        ref={setAnswerInputRef(wordIndex, characterIndex)}
                         key={`${wordIndex}-${characterIndex}`}
                         size="lg"
                         w={16}
@@ -299,7 +316,6 @@ function App() {
                         mr={2}
                         fontSize="2xl"
                         textAlign="center"
-                        placeholder={character}
                         value={answer[wordIndex][characterIndex]}
                         onChange={handleChangeInput(wordIndex, characterIndex)}
                         readOnly={SymbolRegex.test(character)}
