@@ -1,5 +1,5 @@
 import { RepeatIcon } from "@chakra-ui/icons";
-import { Box, Button, Input } from "@chakra-ui/react";
+import { Box, Button, Input, Text } from "@chakra-ui/react";
 import React, {
   createRef,
   RefObject,
@@ -316,6 +316,35 @@ function App() {
         <Box display="flex" flexWrap="wrap" width="90%" alignItems="flex-start">
           {convertTextToQuestionArray(question?.text ?? "").map(
             (word, wordIndex) => {
+              const wordText = word.map((c) => c.toLowerCase()).join("");
+              const answerText =
+                answer[wordIndex]?.map((c) => c.toLowerCase())?.join("") ?? "";
+              if (wordText === answerText) {
+                return (
+                  <Box
+                    className="word"
+                    mr={8}
+                    key={wordIndex}
+                    display="flex"
+                    mb={4}
+                    justifyContent="space-around"
+                    alignItems="center"
+                  >
+                    {word.map((character, characterIndex) => {
+                      return (
+                        <Box w={16} h={16} mr={2} display="flex" justifyContent="center" alignItems="center">
+                          <Text
+                            key={`${wordIndex}-${characterIndex}`}
+                            fontSize="4xl"
+                          >
+                            {character}
+                          </Text>
+                        </Box>
+                      );
+                    })}
+                  </Box>
+                );
+              }
               return (
                 <Box
                   className="word"
