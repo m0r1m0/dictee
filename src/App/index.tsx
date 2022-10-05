@@ -307,6 +307,10 @@ function App() {
     }
   }, [question?.text])
 
+  const copyText =  useCallback((text: string) => () => {
+    navigator.clipboard.writeText(text);
+  }, [])
+
   if (!isVideoLoaded) {
     return null;
   }
@@ -329,6 +333,12 @@ function App() {
                     mb={4}
                     justifyContent="space-around"
                     alignItems="center"
+                    _hover={{
+                      borderBottom: "2px dashed",
+                      borderColor: "gray.400",
+                      cursor: "pointer",
+                    }}
+                    onClick={copyText(wordText)}
                   >
                     {word.map((character, characterIndex) => {
                       return (
