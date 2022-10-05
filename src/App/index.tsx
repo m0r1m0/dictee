@@ -1,5 +1,5 @@
 import { RepeatIcon } from "@chakra-ui/icons";
-import { Box, Button, Input, Text } from "@chakra-ui/react";
+import { Box, Button, Input, Text, useToast } from "@chakra-ui/react";
 import React, {
   createRef,
   RefObject,
@@ -53,6 +53,8 @@ function App() {
     dispatch,
   ] = useReducer(reducer, initialState);
   const answerInputRefs = useRef<(HTMLInputElement | null)[][]>([]);
+
+  const toast = useToast();
 
   useInterval(() => {
     const hasElement =
@@ -309,6 +311,10 @@ function App() {
 
   const copyText =  useCallback((text: string) => () => {
     navigator.clipboard.writeText(text);
+    toast({
+      description: "Copied!",
+      status: "info"
+    });
   }, [])
 
   if (!isVideoLoaded) {
