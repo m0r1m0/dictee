@@ -193,6 +193,9 @@ function App() {
         return;
       }
       focusNext(wordIndex, characterIndex, correctAnswer);
+      if (characterIndex === correctAnswer[wordIndex].length - 1 && wordIndex === correctAnswer.length - 1) {
+        handleRepeatClick();
+      }
     };
 
   const focusNext = (
