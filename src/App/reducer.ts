@@ -198,7 +198,8 @@ const convertSubtitlesToQuestion = (subtitles: subTitleType[]): Question | undef
     return undefined;
   }
 
-  const questionText = removeNSI(getSubtitlesText(subtitles));
+  const questionText = removeNSI(getSubtitlesText(subtitles))
+    .replace(/ {2,}/g, " "); // 2つ以上続く空白を1つにまとめる
   if (questionText.length === 0) {
     return undefined;
   }
