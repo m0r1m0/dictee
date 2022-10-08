@@ -12,6 +12,6 @@ code {
     monospace;
 }
 
-.watch-video--player-view {
+.dictee-enabled {
   height: calc(100% - 200px) !important;
 }

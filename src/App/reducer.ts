@@ -12,6 +12,7 @@ type State = {
   question: Question | undefined;
   currentSubtitles: subTitleType[];
   answer: string[][];
+  enable: boolean;
 };
 type Question = {
   start: number;
@@ -55,13 +56,19 @@ interface AnswerChanged {
   value: string;
 }
 
+interface EnableToggled {
+  type: "enableToggled";
+  enable: boolean;
+}
+
 type Action =
   | DownloadUrlReceived
   | VideoLoaded
   | VideoUnloaded
   | VideoTimeUpdated
   | VideoPaused
-  | AnswerChanged;
+  | AnswerChanged
+  | EnableToggled;
 
 export const initialState: State = {
   isVideoLoaded: false,
@@ -73,6 +80,7 @@ export const initialState: State = {
   question: undefined,
   currentSubtitles: [],
   answer: [],
+  enable: true,
 };
 
 export const reducer: Reducer<State, Action> = (state, action) => {
@@ -172,6 +180,12 @@ export const reducer: Reducer<State, Action> = (state, action) => {
           });
         })
       }
+    }
+    case "enableToggled": {
+      return {
+        ...state,
+        enable: action.enable,
+      };
     }
     default: {
       const _check: never = action;

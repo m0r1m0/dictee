@@ -10,10 +10,10 @@ import React, {
 } from "react";
 import { parse } from "subtitle";
 import "../App.css";
+import { useToggle } from "../hooks/useToggle";
 import { useInterval } from "../useInterval";
 import { useShortcut } from "../useShortcut";
 import { convertTextToQuestionArray } from "../utils/convertTextToQuestionArray";
-import { getSubtitlesText } from "../utils/getCurrentSubtitlesText";
 import { getCurrentTime } from "../utils/getCurrentTime";
 import { getNextSubtitles } from "../utils/getNextSubtitles";
 import { isSymbol } from "../utils/symbol";
@@ -49,6 +49,7 @@ function App() {
       currentSubtitles,
       subtitles,
       answer,
+      enable
     },
     dispatch,
   ] = useReducer(reducer, initialState);
@@ -63,6 +64,10 @@ function App() {
     if (hasElement != isVideoLoaded) {
       // 動画を開いたら字幕をダウンロードする
       if (hasElement) {
+        const playerElement = document.querySelector<HTMLDivElement>(".watch-video--player-view");
+        if (playerElement != null) {
+          playerElement.classList.add("dictee-enabled");
+        }
         const movieId = getMovieId(location.pathname);
         const url = subtitleUrls[Number(movieId)]?.["en"];
         if (url == null) {
@@ -121,6 +126,31 @@ function App() {
         "DICTEE_DOWNLOADURL_RECEIVED",
         listener as EventListener
       );
+  }, []);
+
+  useEffect(() => {
+    const listener = (e: CustomEvent<boolean>) => {
+      dispatch({
+        type: "enableToggled",
+        enable: e.detail,
+      });
+      const playerElement = document.querySelector<HTMLDivElement>(".watch-video--player-view");
+      if (playerElement == null) {
+        return;
+      }
+      if (!e.detail) {
+        playerElement.classList.remove("dictee-enabled");
+      } else {
+        playerElement.classList.add("dictee-enabled");
+      }
+    }
+    window.addEventListener("DICTEE_TOGGLE", listener as EventListener);
+    return () => {
+      window.removeEventListener(
+        "DICTEE_TOGGLE",
+        listener as EventListener,
+      );
+    }
   }, []);
 
   // 表示する字幕を取得する
@@ -319,10 +349,13 @@ function App() {
       status: "info"
     });
   }, [])
+  
+  useToggle();
 
-  if (!isVideoLoaded) {
+  if (!isVideoLoaded || !enable) {
     return null;
   }
+
   return (
     <Box className="AppContainer" p={6} bg="white">
       <Box display="flex" width="100%" flexDirection="row">
